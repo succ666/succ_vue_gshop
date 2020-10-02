@@ -43,7 +43,7 @@
 </script>
 
 <style lang="stylus" rel="stylesheet/stylus">
-@import "../common/stylus/mixins.styl"
+@import "../../common/stylus/mixins.styl"
 .footer-guide
   top-border-1px(#ccc)
   position fixed
