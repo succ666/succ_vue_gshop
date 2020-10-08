@@ -2,17 +2,17 @@
   <section class="profile">
     <HeaderTop title="我的"/>
     <section class="profile-number">
-      <a href="javascript:" class="profile-link" @click="$router.push('/login')">
+      <a href="javascript:" class="profile-link" @click="$router.push(userInfo._id ? '/userInfo': '/login')">
         <div class="profile_image">
           <i class="iconfont icon-geren"></i>
         </div>
         <div class="user-info">
-          <p class="user-info-top">登录/注册</p>
+          <p class="user-info-top">{{userInfo._id ? (userInfo.phone || userInfo.name) :'登录/注册'}}</p>
           <p>
             <span class="user-icon">
-              <i class="iconfont icon-phone icon-mobile"></i>
+              <i class="iconfont icon-mobile" :class="userInfo._id ? '' : 'icon-phone'"></i>
             </span>
-            <span class="icon-mobile-number">暂无绑定手机号</span>
+            <span class="icon-mobile-number">{{userInfo._id? '':'暂无绑定手机号'}}</span>
           </p>
         </div>
         <span class="arrow">
@@ -88,11 +88,33 @@
         </div>
       </a>
     </section>
+    <mt-button type="danger" size="large" v-if="userInfo._id" @click="outLogin">退出登录</mt-button>
+    <!-- <mt-button @click.native="handleClick">点击触发 handleClick</mt-button> -->
   </section>
 </template>
 
 <script type="text/ecmascript-6">
+import {mapState} from 'vuex'
+import { Button, MessageBox } from 'mint-ui'
   export default {
+    computed:{
+      ...mapState(['userInfo'])
+    },
+    components: {
+      'mt-button': Button
+    },
+    methods:{
+      outLogin(){
+        MessageBox.confirm('确定执行此操作?').then(
+          action => {
+            this.$store.dispatch('logout')
+          },
+          action => {
+            return new Promise(()=>{})
+          }
+          );
+      }
+    }
   }
 </script>
 

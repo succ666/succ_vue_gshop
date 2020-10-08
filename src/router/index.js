@@ -11,11 +11,7 @@ import Profile from '@/pages/Profile/Profile.vue'
 import Search from '@/pages/Search/Search.vue'
 import Login from '@/pages/Login/Login.vue'
 
-// const originalPush = VueRouter.prototype.push
 
-// VueRouter.prototype.push = function push(location) {
-//   return originalPush.call(this, location).catch(err => err)
-// }
 
 // 声明使用vue插件
 Vue.use(VueRouter)

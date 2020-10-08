@@ -2,42 +2,43 @@
    <div class="loginContainer">
       <div class="loginInner">
         <div class="login_header">
-          <h2 class="login_logo">硅谷外卖</h2>
+          <h2 class="login_logo">买买提外卖</h2>
           <div class="login_header_title">
-            <a href="javascript:;" class="on">短信登录</a>
-            <a href="javascript:;">密码登录</a>
+            <a href="javascript:;" :class="isShowSms ? 'on':'off'" @click="isShowSms = true">短信登录</a>
+            <a href="javascript:;" :class="isShowSms ? 'off':'on'" @click="isShowSms = false">密码登录</a>
           </div>
         </div>
         <div class="login_content">
-          <form>
-            <div class="on">
+          <form @submit.prevent="login">
+            <div :class="!isShowSms ? 'off':'on'">
               <section class="login_message">
-                <input type="tel" maxlength="11" placeholder="手机号">
-                <button disabled="disabled" class="get_verification">获取验证码</button>
+                <input type="tel" maxlength="11" placeholder="手机号" v-model="phone">
+                <button :disabled="!isPhoneCode" class="get_verification" 
+                :class="{'right_phone_number':isPhoneCode}" @click.prevent="sendCode" >{{time > 0 ? `短信以发送(${time}s)`:'获取验证码'}}</button>
               </section>
               <section class="login_verification">
-                <input type="tel" maxlength="8" placeholder="验证码">
+                <input type="tel" maxlength="8" placeholder="验证码" v-model="code">
               </section>
               <section class="login_hint">
                 温馨提示：未注册硅谷外卖帐号的手机号，登录时将自动注册，且代表已同意
                 <a href="javascript:;">《用户服务协议》</a>
               </section>
             </div>
-            <div>
+            <div :class="isShowSms ? 'off':'on'">
               <section>
                 <section class="login_message">
-                  <input type="tel" maxlength="11" placeholder="手机/邮箱/用户名">
+                  <input type="tel" maxlength="11" placeholder="手机/邮箱/用户名" v-model="name">
                 </section>
                 <section class="login_verification">
-                  <input type="tel" maxlength="8" placeholder="密码">
-                  <div class="switch_button off">
-                    <div class="switch_circle"></div>
-                    <span class="switch_text">...</span>
+                  <input maxlength="8" placeholder="密码" :type="isShowPwd ? 'text':'password'" v-model="pwd"> 
+                  <div class="switch_button" :class="isShowPwd ? 'on':'off'"  @click="isShowPwd = !isShowPwd">
+                    <div class="switch_circle" :class="isShowPwd ? 'left': ''"></div>
+                    <span class="switch_text">abc</span>
                   </div>
                 </section>
                 <section class="login_message">
-                  <input type="text" maxlength="11" placeholder="验证码">
-                  <img class="get_verification" src="./images/captcha.svg" alt="captcha">
+                  <input type="text" maxlength="11" placeholder="验证码" v-model="captcha">
+                  <img class="get_verification" ref="captcha" @click="getCaptcha" src="http://localhost:4000/captcha" alt="captcha">
                 </section>
               </section>
             </div>
@@ -45,7 +46,7 @@
           </form>
           <a href="javascript:;" class="about_us">关于我们</a>
         </div>
-        <a href="javascript:" class="go_back">
+        <a href="javascript:" class="go_back" @click="$router.back()">
           <i class="iconfont icon-left"></i>
         </a>
       </div>
@@ -53,7 +54,104 @@
 </template>
 
 <script type="text/ecmascript-6">
+  import { Toast } from 'mint-ui'
+  import {reqSendcode,reqSmsLogin,reqPwdLogin} from '@/api/index.js'
   export default {
+    name: 'Login',
+    data() {
+      return {
+        isShowSms: true,      // true 短信登录 ，   false 密码登录
+        phone: '',            //电话号码 
+        isShowPwd: false,     // true 显示密码 ，   false 隐藏密码
+        time: 0,              //定时时间
+        pwd: '',              //密码
+        name: '',             //用户名
+        code: '',             //短信验证码
+        captcha: '',          //图片验证码
+      }
+    },
+    computed: {
+      isPhoneCode(){
+        return /^1\d{10}$/.test(this.phone)
+      },
+     
+    },
+    methods: {
+      //启动倒计时发送验证码
+      async sendCode() {
+        //倒计时开启
+        if(!this.time){
+          this.time = 20
+           this.IntervalId = setInterval(()=>{
+            if(this.time <= 0){
+              clearInterval(this.IntervalId)
+              this.time = 0
+              return
+            }
+            this.time--
+          },1000)
+        }
+        // 发送ajax请求（向指定手机发送验证码短信）
+        const result = await reqSendcode(this.phone)
+        if(result.code === 1){
+          Toast(result.msg)
+          this.time = 0
+          clearInterval(this.IntervalId)
+        }
+      },
+      // 异步登录
+      async login() {
+        let result
+        // isShowSms: true,      // true 短信登录 ，   false 密码登录
+        if(this.isShowSms){   // true 短信登录 ，  
+          const {isPhoneCode, code, phone} = this
+          if(!isPhoneCode){
+            //请输入正确的手机号
+            Toast('请输入正确的手机号');
+            return
+          }else if(!/^\d{6}$/.test(code)){ //验证码
+            //请输入正确的验证码
+             Toast('请输入正确的验证码');
+            return
+          }
+          //登录
+          result = await reqSmsLogin({phone,code})
+
+        }else{   //false 密码登录
+          const {name, pwd, captcha} = this
+          if(!name){
+            //请输入用户名
+            Toast('请输入正确的用户名');
+            return
+          }else if(!pwd){
+            //请输入密码
+            Toast('请输入正确的密码');
+            return
+          }else if(!captcha){
+            //请输入验证码
+            return
+          }
+          // 登录
+          result = await reqPwdLogin({name,pwd,captcha})
+        } 
+        // 根据结果数据处理
+        if(result.code === 1){
+            const user = result.msg
+            this.getCaptcha()
+            Toast(result.msg)
+          }else{
+            const user = result.data
+            this.$store.dispatch('syncUserInfo', user)
+            this.$router.replace('/profile')
+            this.getCaptcha()
+            Toast('登录成功')
+          }
+      },
+
+      getCaptcha(){
+        this.$refs.captcha.src = 'http://localhost:4000/captcha?time='+Date.now()
+      }
+    }
   }
 </script>
 
@@ -117,6 +215,8 @@
               color #ccc
               font-size 14px
               background transparent
+              &.right_phone_number
+                color black 
           .login_verification
             position relative
             margin-top 16px
@@ -156,6 +256,9 @@
                 background #fff
                 box-shadow 0 2px 4px 0 rgba(0,0,0,.1)
                 transition transform .3s
+                &.left{
+                  transform translateX(27px)
+                }
           .login_hint
             margin-top 12px
             color #999

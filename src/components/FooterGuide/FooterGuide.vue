@@ -32,7 +32,10 @@
     name: 'FooterGuide',
     methods: {
       goto(path){
-        this.$router.replace(path)
+        if( path !== this.$route.path){
+          this.$router.replace(path)
+        }
+        // console.log(path)
         // console.log(this.$route.path)
       },
       isCurrent(path){
